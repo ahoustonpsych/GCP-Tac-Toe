@@ -33,13 +33,13 @@ class Game:
 
     def move(self, player, moveX, moveY):
         if self.BOARD[moveX][moveY]:
-            return 'space occupied'
+            return False, 'space occupied'
 
         self.BOARD[moveX][moveY] = player
 
         # switch turns!
         self.TURN = 'Y' if self.TURN == 'X' else 'X'
-        return self.BOARD
+        return True, self.BOARD
 
 GAME = Game()
 
