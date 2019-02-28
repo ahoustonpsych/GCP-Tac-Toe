@@ -18,56 +18,30 @@ class Game:
         self.players = Players
         # starting player (random player in Players enum [X or Y])
         self.TURN = [player.value for player in self.players][random.randrange(len(self.players))]
-
+    
+    #TODO get board state
     def get_board(self):
-        return str(self.BOARD)
+        return self.BOARD
     
     #TODO check win condition for @player
     def check_win(self, player):
         return player == winner
-
+    
+    #TODO check tie condition (full board)
     def check_tie(self):
-        # return False if any rows have a Nonetype
-        return not True in [None in row for row in self.BOARD]
-        
-        # equiv. to:
-        # for row in self.BOARD:
-        #    if None in row:
-        #        return False
-        # return True
+        return False
 
     def move(self, player, moveX, moveY):
-        if str(player).upper() != self.TURN:
-            return 'not your turn', None, None, None
+        if self.BOARD[moveX][moveY]:
+            return 'space occupied'
 
-        if self.BOARD[int(moveX)][int(moveY)]:
-            return 'space occupied', None, None, None
-
-        # empty space! make the move
-        self.BOARD[int(moveX)][int(moveY)] = player
-        
-        #TODO check win condition
-        #if self.check_win(self.TURN):
-            #TODO properly end the game
-        #    return None, self.BOARD, '<h1><b>%s WON THE GAME</b></h1>' % self.TURN, None
-        
-        #TODO fix return args
-        if self.check_tie():
-            return None, self.BOARD, None, "<h2><b>IT'S A DRAW!</b></h2>"
+        self.BOARD[moveX][moveY] = player
 
         # switch turns!
         self.TURN = 'Y' if self.TURN == 'X' else 'X'
-        # success
-        return None, self.BOARD, None, None
-
+        return self.BOARD
 
 GAME = Game()
-
-# generate new board
-# TODO integrate into Game class
-def new_game():
-    GAME = Game()
-    return GAME.get_board()
 
 @app.route('/')
 def landing_page():
@@ -91,26 +65,12 @@ Return
 """
 @app.route('/move/<player>/<moveX>/<moveY>', methods=['GET','POST'])
 def move(player=None, moveX=None, moveY=None):
-    # @get: return current player
-    #if request.method == 'GET':
-    #    return 'Next player: ' + GAME.TURN
-    print('request:', request, request.form)
-
-    # parse POST args
-    if request.method == 'POST':
-        player = request.form['player']
-        moveX = request.form['moveX']
-        moveY = request.form['moveY']
-
-    print('raw input args: ', player, moveX, moveY)
-    # abort if invalid inputs
+    # validate input args
     valid, msg = validate_args(player, moveX, moveY)
     if not valid:
         return msg
-
-    print('Validated Inputs:', player, moveX, moveY)
-    print(type(player), type(moveX), type(moveY))
     
+    # attempt to make move
     err, result, winFlag, tieFlag = GAME.move(player, moveX, moveY)
     if err:
         return err
@@ -127,6 +87,7 @@ def validate_args(player, moveX, moveY):
     # err if player doesn't exist
     if not isinstance(player, str):
         return False,'<b>**ERROR**</b> invalid input for variable <u>"player"</u>. must be <b>X</b> or <b>Y</b>'
+
     # err if move coords don't exist
     try:
         moveX = int(moveX)
@@ -134,12 +95,7 @@ def validate_args(player, moveX, moveY):
         print(type(moveX),type(moveY))
     except ValueError:
         return False,'<b>**ERROR**</b> invalid move coordinates. <b>0 <= moveX,moveY <= BOARD size</b> (%d)' % len(GAME.BOARD)
-    #if not isinstance(moveX, int) or isinstance(moveY, int):
-    #    return False,'<b>**ERROR**</b> invalid move coordinates. <b>0 <= moveX,moveY <= BOARD size</b> (%d)' % len(GAME.BOARD)
-    # err if invalid player choice (not X or Y)
-    if player.upper() not in [player.value for player in GAME.players]:
-        return False,'<b>**ERROR**</b> invalid player value. must be <b>%s</b>' % [player.value for player in GAME.players].join('</b> or <b>') # <b>X</b> or <b>Y</b>'
-
+    
     # err if move is out of bounds
     # TODO: integrate into Game.move()
     if moveX not in range(GAME.SIZE) or moveY not in range(GAME.SIZE):
